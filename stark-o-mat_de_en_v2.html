@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STARK-O-MAT – STARK & MUT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ADD8E6;
+        }
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #003366;
+            margin: 0;
+        }
+        .lang-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .lang-select select {
+            padding: 5px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        .question {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .question h3 {
+            margin-top: 0;
+        }
+        .answers {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .answers button {
+            padding: 8px 14px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        .answers button.selected {
+            background-color: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+        button#next-btn, button#prev-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #003366;
+            background-color: #ffffff;
+            cursor: pointer;
+        }
+        button[disabled] {
+            opacity: 0.5;
+            cursor: default;
+        }
+        #result {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f0f8ff;
+        }
+        #points-display {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .small-note {
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1 id="title">STARK-O-MAT – STARK & MUT</h1>
+            <div id="subtitle" class="small-note">
+                Bitte entscheide zu jeder These, ob du zustimmst oder nicht.
+            </div>
+        </div>
+        <div class="lang-select">
+            <label for="lang-select" id="lang-label">Sprache / Language:</label>
+            <select id="lang-select" onchange="setLanguage(this.value)">
+                <option value="de" selected>DE</option>
+                <option value="en">EN</option>
+            </select>
+        </div>
+    </div>
+
+    <p id="intro-text">
+        Antworte auf jede These mit <strong>Ja</strong>, <strong>Nein</strong> oder <strong>Weiß nicht</strong>.
+        Eine „Weiß nicht“-Antwort zählt als ½ Ja.
+    </p>
+
+    <div id="question-container"></div>
+
+    <div style="margin-top: 20px;">
+        <button id="prev-btn" onclick="prevQuestion()">‹ Zurück</button>
+        <button id="next-btn" onclick="nextQuestion()">Weiter ›</button>
+    </div>
+
+    <div id="result">
+        <h2 id="result-title">Deine Auswertung</h2>
+        <div id="points-display"></div>
+        <div id="recommendation"></div>
+    </div>
+
+    <script>
+        const data = {
+            de: {
+                questions: [
+                    "1. Der Betriebsrat soll unabhängig von Partei- oder Gewerkschaftsinteressen handeln und ausschließlich die Interessen aller Beschäftigten vertreten.",
+                    "2. Wir stehen für Pragmatismus. Wir fordern, dass zukünftig strittige Regelungen im „Trial Modus“ (mit begrenzter Laufzeit) in Kraft treten und werden den Prozess begleiten. Nachteile können so erkannt und abgestellt werden. Darin sehen wir die beste Möglichkeit, dass sich SAP Deutschland dynamisch entwickeln und international bestehen kann.",
+                    "3. Das deutsche Vergütungssystem soll stärker in das internationale Firmen Framework „z.B. Grade Progressions“ integriert werden, damit bestmögliche Karriereentwicklung und deutsche Arbeitsplatzsicherheit vereint werden.",
+                    "4. Einzigartige SAP Benefits (z.B. Kostenloses Mittagessen, Own SAP, 1 Jahr Lohnfortzahlung, zinsloses Baudarlehen uvm.) sollen erhalten und weiterentwickelt werden.",
+                    "5. Wir werden Flexible Mobilität verbessern und europaweite Firmenwagen Nutzung erhalten.",
+                    "6. Es ist wichtig, dass Entscheidungen im Betriebsrat sachlich und faktenbasiert getroffen werden statt ideologisch oder konfrontativ.",
+                    "7. Populismus und Vetternwirtschaft muss entgegengetreten werden.",
+                    "8. Neue Jobprofile (AI) entstehen wegen Bedenken des Betriebsrats aktuell teilweise nur im Ausland. Wir wollen innovative Entwicklungen in Deutschland fördern und nicht verhindern. Damit neu entstehende Jobprofile auch in Deutschland ausgeschrieben werden dürfen.",
+                    "9. Freiwillige Wochenenddienste, Rufbereitschaften ermöglichen 24h x 7d Services in Deutschland. Das stärkt SAP aber kann Beschäftigte belasten. Wir stehen für Freiwilligkeit und Eigenverantwortung statt Vormundschaft.",
+                    "10. Alle Kollegen sind uns gleich wichtig (Wir achten nicht nur auf potentielle Wähler): Einsatz mit Herzblut für Alle, auch im Vorruhestand, Frührente oder mit Langzeiterkrankung.",
+                    "11. Ehrenamtliche Infosessions zu wichtigen Themen – auch über den Tellerrand hinaus – sollen weiter kontinuierlich angeboten werden.",
+                    "12. Wir stehen für stärkere Belegschaftseinbindung, Aufzeichnungen der Betriebsversammlungen, Befragung der Beschäftigten anstatt des/r Gewerkschaftsfunktionärs/e.",
+                    "13. Benachteiligung oder Bevorzugung einzelner Beschäftigtengruppen lehnen wir ab.",
+                    "14. Die Arbeitszeitflexibilisierung durch Ausbau des Arbeitszeitkontos soll kontinuierlich weiterentwickelt werden.",
+                    "15. Wir übernehmen Verantwortung für unsere Entscheidungen – auch bei schwierigen oder unbequemen Themen."
+                ],
+                labels: {
+                    yes: "Ja",
+                    no: "Nein",
+                    unsure: "Weiß nicht",
+                    title: "STARK-O-MAT – STARK & MUT",
+                    subtitle: "Bitte entscheide zu jeder These, ob du zustimmst oder nicht.",
+                    intro: "Antworte auf jede These mit <strong>Ja</strong>, <strong>Nein</strong> oder <strong>Weiß nicht</strong>. Eine „Weiß nicht“-Antwort zählt als ½ Ja.",
+                    resultTitle: "Deine Auswertung",
+                    navPrev: "‹ Zurück",
+                    navNext: "Weiter ›",
+                    navShowResult: "Ergebnis anzeigen",
+                    langLabel: "Sprache / Language:",
+                    pointsPrefix: "Gesamtpunkte: ",
+                    pointsSuffix: " von 15"
+                },
+                resultTexts: function(points) {
+                    if (points <= 4) {
+                        return `
+                            <p>Deine Haltung liegt aktuell eher außerhalb der Ausrichtung von STARK & MUT.</p>
+                            <p>Du setzt vermutlich andere Schwerpunkte als wir – etwa stärkere Konfrontation, klare Lager oder festere Strukturen. STARK & MUT steht für unabhängige, kooperative und sachliche Mitbestimmung. Wenn dir diese Art der Zusammenarbeit weniger wichtig ist, gibt es im Spektrum der Listen sicher andere Angebote, die näher an deinen Erwartungen liegen.</p>
+                            <p><strong>Wahlempfehlung:</strong> Wenn dir jedoch wichtig ist, dass im Betriebsrat unterschiedliche Sichtweisen respektvoll zusammenarbeiten und Entscheidungen transparent erklärt werden, lohnt es sich, STARK & MUT in Betracht zu ziehen.</p>
+                        `;
+                    } else if (points <= 8) {
+                        return `
+                            <p>Du teilst einzelne wichtige Grundgedanken von STARK & MUT.</p>
+                            <p>Sachlichkeit, Transparenz oder Nähe zu den Beschäftigten sind dir offenbar wichtig – auch wenn du nicht in allen Punkten mit unserem Ansatz übereinstimmst. STARK & MUT steht für Mitbestimmung durch Zusammenarbeit und Verantwortung. Vielleicht ist unser Weg nicht in allen Facetten deiner, aber es gibt klare Berührungspunkte.</p>
+                            <p><strong>Wahlempfehlung:</strong> Wenn du diese gemeinsamen Werte stärken möchtest, ist STARK & MUT eine gute Wahl, um sachliche und konstruktive Mitbestimmung im Betriebsrat zu fördern.</p>
+                        `;
+                    } else if (points <= 12) {
+                        return `
+                            <p>Du hast eine starke inhaltliche Nähe zu STARK & MUT.</p>
+                            <p>Viele unserer Werte und Ziele entsprechen offensichtlich deiner Vorstellung von moderner, verantwortungsvoller Mitbestimmung. Unabhängigkeit, Kooperation, Transparenz und aktive Gestaltung scheinen für dich zentrale Punkte zu sein. STARK & MUT würde deine Interessen im Betriebsrat sehr gut vertreten.</p>
+                            <p><strong>Wahlempfehlung:</strong> Mit deiner Stimme für STARK & MUT stärkst du genau diese Art von Betriebsratsarbeit und trägst dazu bei, tragfähige Lösungen für alle Beschäftigten zu gestalten.</p>
+                        `;
+                    } else {
+                        return `
+                            <p>Du teilst die Haltung und das Selbstverständnis von STARK & MUT nahezu vollständig.</p>
+                            <p>Unsere Grundsätze spiegeln klar wider, wie du dir eine starke, mutige und faire Interessenvertretung vorstellst: unabhängig, sachlich, kooperativ und nah an den Menschen. Wenn du einen Betriebsrat willst, der Verantwortung übernimmt, Orientierung gibt und Zukunft gemeinsam gestaltet, dann bist du bei STARK & MUT genau richtig.</p>
+                            <p><strong>Wahlempfehlung:</strong> STARK & MUT ist deine Liste. Mit deiner Stimme gibst du dieser Haltung Gewicht – für ein starkes Miteinander und eine mutige, verantwortungsvolle Mitbestimmung.</p>
+                        `;
+                    }
+                }
+            },
+            en: {
+                questions: [
+                    "1. The Works Council should act independently of party or union interests and represent exclusively the interests of all employees.",
+                    "2. We stand for pragmatism. We demand that, in the future, disputed regulations be introduced in a “trial mode” (with a limited duration), and we will actively accompany the process. This allows disadvantages to be identified and corrected. We see this as the best way for SAP Germany to develop dynamically and remain competitive internationally.",
+                    "3. The German compensation system should be more strongly integrated into the international corporate framework (e.g. grade progressions), so that optimal career development and job security in Germany can be combined.",
+                    "4. Unique SAP benefits (e.g. free lunch, Own SAP, one year of continued salary payment, interest-free home loans, and much more) should be preserved and further developed.",
+                    "5. We will improve flexible mobility and preserve Europe-wide company car usage.",
+                    "6. It is important that decisions in the Works Council are made objectively and based on facts rather than ideologically or confrontationally.",
+                    "7. Populism and nepotism must be actively opposed.",
+                    "8. Due to concerns raised by the Works Council, new job profiles (AI) are currently sometimes created only abroad. We want to promote innovative developments in Germany rather than prevent them, so that newly emerging job profiles can also be advertised in Germany.",
+                    "9. Voluntary weekend work and on-call duties enable 24/7 services in Germany. This strengthens SAP but can place a burden on employees. We stand for voluntariness and personal responsibility instead of paternalism.",
+                    "10. All colleagues are equally important to us (we do not focus only on potential voters): we are committed with passion to everyone, including those in phased retirement, early retirement, or with long-term illness.",
+                    "11. Voluntary information sessions on important topics – also beyond one’s immediate field – should continue to be offered on a regular basis.",
+                    "12. We stand for stronger employee involvement, recordings of works meetings, and surveying employees instead of relying on union officials.",
+                    "13. We reject discrimination against or preferential treatment of individual groups of employees.",
+                    "14. Working-time flexibility through the expansion of working-time accounts should be continuously further developed.",
+                    "15. We take responsibility for our decisions – even on difficult or uncomfortable issues."
+                ],
+                labels: {
+                    yes: "Yes",
+                    no: "No",
+                    unsure: "Not sure",
+                    title: "STARK-O-MAT – STARK & MUT",
+                    subtitle: "Please indicate whether you agree or disagree with each statement.",
+                    intro: "Please answer each statement with <strong>Yes</strong>, <strong>No</strong>, or <strong>Not sure</strong>. A “Not sure” answer counts as half a Yes.",
+                    resultTitle: "Your Result",
+                    navPrev: "‹ Back",
+                    navNext: "Next ›",
+                    navShowResult: "Show result",
+                    langLabel: "Sprache / Language:",
+                    pointsPrefix: "Total points: ",
+                    pointsSuffix: " out of 15"
+                },
+                resultTexts: function(points) {
+                    if (points <= 4) {
+                        return `
+                            <p>Your current stance lies rather outside the orientation of STARK & MUT.</p>
+                            <p>You likely set different priorities than we do – such as stronger confrontation, clear camps, or more rigid structures. STARK & MUT stands for independent, cooperative, and objective co-determination. If this type of collaboration is less important to you, there are certainly other lists within the spectrum that may align more closely with your expectations.</p>
+                            <p><strong>Voting recommendation:</strong> If, however, it matters to you that different perspectives in the Works Council work together respectfully and that decisions are explained transparently, it is worth considering STARK & MUT.</p>
+                        `;
+                    } else if (points <= 8) {
+                        return `
+                            <p>You share some important core ideas with STARK & MUT.</p>
+                            <p>Objectivity, transparency, or closeness to employees are clearly important to you – even if you do not fully agree with our approach in every point. STARK & MUT stands for co-determination through cooperation and responsibility. Our path may not be identical to yours in every aspect, but there are clear points of overlap.</p>
+                            <p><strong>Voting recommendation:</strong> If you want to strengthen these shared values, STARK & MUT is a good choice to promote objective and constructive co-determination in the Works Council.</p>
+                        `;
+                    } else if (points <= 12) {
+                        return `
+                            <p>You have a strong substantive alignment with STARK & MUT.</p>
+                            <p>Many of our values and goals clearly correspond to your idea of modern, responsible co-determination. Independence, cooperation, transparency, and active shaping seem to be central to you. STARK & MUT would represent your interests in the Works Council very well.</p>
+                            <p><strong>Voting recommendation:</strong> With your vote for STARK & MUT, you strengthen exactly this kind of Works Council work and help create sustainable solutions for all employees.</p>
+                        `;
+                    } else {
+                        return `
+                            <p>You almost completely share the attitude and self-image of STARK & MUT.</p>
+                            <p>Our principles clearly reflect how you envision strong, courageous, and fair representation of interests: independent, objective, cooperative, and close to people. If you want a Works Council that takes responsibility, provides orientation, and shapes the future together, STARK & MUT is exactly the right choice for you.</p>
+                            <p><strong>Voting recommendation:</strong> STARK & MUT is your list. With your vote, you give this attitude weight – for a strong sense of togetherness and courageous, responsible co-determination.</p>
+                        `;
+                    }
+                }
+            }
+        };
+
+        let currentLanguage = 'de';
+        let currentQuestion = 0;
+        const answers = new Array(15).fill(null); // language-independent scoring
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            updateTexts();
+            showQuestion();
+        }
+
+        function updateTexts() {
+            const labels = data[currentLanguage].labels;
+            document.getElementById('title').textContent = labels.title;
+            document.getElementById('subtitle').textContent = labels.subtitle;
+            document.getElementById('intro-text').innerHTML = labels.intro;
+            document.getElementById('result-title').textContent = labels.resultTitle;
+            document.getElementById('lang-label').textContent = labels.langLabel;
+            updateNavButtons();
+        }
+
+        function showQuestion() {
+            const container = document.getElementById("question-container");
+            const labels = data[currentLanguage].labels;
+            const questions = data[currentLanguage].questions;
+
+            container.style.display = "block";
+            document.getElementById("prev-btn").style.display = "inline-block";
+            document.getElementById("next-btn").style.display = "inline-block";
+            document.getElementById("result").style.display = "none";
+
+            container.innerHTML = `
+                <div class="question">
+                    <h3>${questions[currentQuestion]}</h3>
+                    <div class="answers">
+                        <button type="button"
+                                onclick="selectAnswer('yes')"
+                                class="${answers[currentQuestion] === 'yes' ? 'selected' : ''}">
+                            ${labels.yes}
+                        </button>
+                        <button type="button"
+                                onclick="selectAnswer('no')"
+                                class="${answers[currentQuestion] === 'no' ? 'selected' : ''}">
+                            ${labels.no}
+                        </button>
+                        <button type="button"
+                                onclick="selectAnswer('unsure')"
+                                class="${answers[currentQuestion] === 'unsure' ? 'selected' : ''}">
+                            ${labels.unsure}
+                        </button>
+                    </div>
+                </div>`;
+        }
+
+        function selectAnswer(val) {
+            answers[currentQuestion] = val;
+            showQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < data[currentLanguage].questions.length - 1) {
+                currentQuestion++;
+                showQuestion();
+            } else {
+                calculateResult();
+                document.getElementById("question-container").style.display = "none";
+                document.getElementById("prev-btn").style.display = "none";
+                document.getElementById("next-btn").style.display = "none";
+            }
+            updateNavButtons();
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion();
+            }
+            updateNavButtons();
+        }
+
+        function updateNavButtons() {
+            const labels = data[currentLanguage].labels;
+            const prevBtn = document.getElementById("prev-btn");
+            const nextBtn = document.getElementById("next-btn");
+            prevBtn.disabled = (currentQuestion === 0);
+            prevBtn.textContent = labels.navPrev;
+            nextBtn.textContent = (currentQuestion === data[currentLanguage].questions.length - 1)
+                ? labels.navShowResult
+                : labels.navNext;
+        }
+
+        function calculateResult() {
+            let points = 0;
+            for (let i = 0; i < answers.length; i++) {
+                if (answers[i] === 'yes') points += 1;
+                else if (answers[i] === 'unsure') points += 0.5;
+            }
+
+            const resultDiv = document.getElementById("result");
+            const pointsDisplay = document.getElementById("points-display");
+            const recommendation = document.getElementById("recommendation");
+            const labels = data[currentLanguage].labels;
+            const texts = data[currentLanguage].resultTexts(points);
+
+            pointsDisplay.textContent = labels.pointsPrefix + points.toFixed(1) + labels.pointsSuffix;
+            recommendation.innerHTML = texts;
+            resultDiv.style.display = "block";
+        }
+
+        // Initial start
+        setLanguage('de');
+        showQuestion();
+    </script>
+</body>
+</html>

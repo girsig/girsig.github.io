@@ -1,2 +1,2 @@
 # visitcard
-my online card
+my online card for www.girsig.de
